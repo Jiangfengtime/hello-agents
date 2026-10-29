@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1160" viewBox="0 0 1600 1160" role="img" aria-labelledby="title desc">
+  <title id="title">原始 Transformer 从输入到输出的完整流程</title>
+  <desc id="desc">以 I love cats 翻译为我爱猫为例。左侧源文本经过切词、嵌入、位置编码和编码器层，形成源上下文表示。右侧目标前缀经过嵌入、位置编码、解码器的因果自注意力、交叉注意力和前馈网络，输出词表分数。生成时选择下一个词并追加到目标前缀，直到结束符；训练时将分数与真实标签比较并反向传播。</desc>
+  <defs>
+    <style>
+      .cn { font-family: "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; }
+      .mono { font-family: "Menlo", "SFMono-Regular", "Consolas", monospace; }
+      .title { font-size: 35px; font-weight: 700; fill: #17243b; }
+      .sub { font-size: 18px; fill: #54637c; }
+      .lane-title { font-size: 27px; font-weight: 700; fill: #263955; }
+      .box-title { font-size: 21px; font-weight: 700; fill: #253450; }
+      .box-sub { font-size: 17px; fill: #52627c; }
+      .step { font-size: 18px; fill: #253450; }
+      .note { font-size: 17px; fill: #4c5d77; }
+      .small { font-size: 16px; fill: #61708a; }
+      .arrow { fill: none; stroke: #5c6f8d; stroke-width: 3; marker-end: url(#arrow); }
+      .cross-arrow { fill: none; stroke: #7250b9; stroke-width: 4; marker-end: url(#cross-arrow); }
+      .loop-arrow { fill: none; stroke: #287a59; stroke-width: 4; marker-end: url(#loop-arrow); }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#5c6f8d"/></marker>
+    <marker id="cross-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7250b9"/></marker>
+    <marker id="loop-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#287a59"/></marker>
+  </defs>
+
+  <rect width="1600" height="1160" fill="#f7f9fc"/>
+  <text class="cn title" x="48" y="58">Transformer 完整流程：I love cats → 我爱猫</text>
+  <text class="cn sub" x="48" y="91">原始 Encoder–Decoder 架构；彩色箭头表示编码器信息传给解码器，以及生成时将新 Token 加回前缀。</text>
+
+  <!-- Source / encoder lane -->
+  <rect x="42" y="124" width="708" height="730" rx="22" fill="#ffffff" stroke="#c9d9ef" stroke-width="2"/>
+  <text class="cn lane-title" x="72" y="168">源序列：编码器 Encoder</text>
+  <rect x="92" y="190" width="608" height="62" rx="12" fill="#e9f2ff" stroke="#9fc1ef"/>
+  <text class="cn box-title" x="112" y="218">① 输入英文</text>
+  <text class="mono box-sub" x="315" y="221">I love cats</text>
+  <path class="arrow" d="M 396 253 L 396 272"/>
+
+  <rect x="92" y="278" width="608" height="62" rx="12" fill="#e9f2ff" stroke="#9fc1ef"/>
+  <text class="cn box-title" x="112" y="306">② 切成 Token、转为 ID</text>
+  <text class="mono box-sub" x="390" y="309">[I, love, cats]</text>
+  <path class="arrow" d="M 396 341 L 396 360"/>
+
+  <rect x="92" y="366" width="608" height="72" rx="12" fill="#e9f2ff" stroke="#9fc1ef"/>
+  <text class="cn box-title" x="112" y="395">③ 源 Token 嵌入 + 位置编码</text>
+  <text class="cn box-sub" x="112" y="423">每个位置得到一个含内容与位置的向量</text>
+  <path class="arrow" d="M 396 439 L 396 460"/>
+
+  <rect x="92" y="466" width="608" height="265" rx="15" fill="#f0f5ff" stroke="#9fc1ef" stroke-width="2"/>
+  <text class="cn box-title" x="113" y="496">④ 编码器层 × N</text>
+  <rect x="115" y="510" width="562" height="45" rx="8" fill="#ffffff"/>
+  <text class="cn step" x="134" y="539">多头自注意力：Q、K、V 都来自源序列</text>
+  <rect x="115" y="562" width="562" height="45" rx="8" fill="#ffffff"/>
+  <text class="cn step" x="134" y="591">残差相加 + LayerNorm</text>
+  <rect x="115" y="614" width="562" height="45" rx="8" fill="#ffffff"/>
+  <text class="cn step" x="134" y="643">逐位置 FFN：加工各位置向量</text>
+  <rect x="115" y="666" width="562" height="45" rx="8" fill="#ffffff"/>
+  <text class="cn step" x="134" y="695">残差相加 + LayerNorm</text>
+  <path class="arrow" d="M 396 732 L 396 753"/>
+
+  <rect x="92" y="759" width="608" height="69" rx="12" fill="#dceafe" stroke="#8bb2e6" stroke-width="2"/>
+  <text class="cn box-title" x="112" y="789">⑤ 编码器输出：每个英文位置一个上下文向量</text>
+  <text class="mono box-sub" x="112" y="816">shape: [B, 源长度 S, d_model]</text>
+
+  <!-- Target / decoder lane -->
+  <rect x="850" y="124" width="708" height="730" rx="22" fill="#ffffff" stroke="#c5e5d6" stroke-width="2"/>
+  <text class="cn lane-title" x="880" y="168">目标序列：解码器 Decoder</text>
+  <rect x="900" y="190" width="608" height="62" rx="12" fill="#e8f6ed" stroke="#9ad3b4"/>
+  <text class="cn box-title" x="920" y="218">⑥ 已生成的中文前缀</text>
+  <text class="mono box-sub" x="1205" y="221">&lt;开始&gt; 我 …</text>
+  <path class="arrow" d="M 1204 253 L 1204 272"/>
+
+  <rect x="900" y="278" width="608" height="62" rx="12" fill="#e8f6ed" stroke="#9ad3b4"/>
+  <text class="cn box-title" x="920" y="306">⑦ 目标 Token ID</text>
+  <text class="cn box-sub" x="920" y="330">训练时使用真实前缀；生成时使用已生成前缀</text>
+  <path class="arrow" d="M 1204 341 L 1204 360"/>
+
+  <rect x="900" y="366" width="608" height="72" rx="12" fill="#e8f6ed" stroke="#9ad3b4"/>
+  <text class="cn box-title" x="920" y="395">⑧ 目标 Token 嵌入 + 位置编码</text>
+  <text class="cn box-sub" x="920" y="423">目标序列的位置也从 0 开始</text>
+  <path class="arrow" d="M 1204 439 L 1204 460"/>
+
+  <rect x="900" y="466" width="608" height="265" rx="15" fill="#edfaf2" stroke="#9ad3b4" stroke-width="2"/>
+  <text class="cn box-title" x="920" y="496">⑨ 解码器层 × N</text>
+  <rect x="924" y="510" width="560" height="42" rx="8" fill="#ffffff"/>
+  <text class="cn step" x="942" y="538">因果掩码自注意力：只看目标前缀</text>
+  <rect x="924" y="558" width="560" height="42" rx="8" fill="#ffffff"/>
+  <text class="cn step" x="942" y="586">残差相加 + LayerNorm</text>
+  <rect x="924" y="606" width="560" height="42" rx="8" fill="#f1eaff" stroke="#ceb8f3"/>
+  <text class="cn step" x="942" y="634">交叉注意力：Q 来自目标，K/V 来自编码器</text>
+  <rect x="924" y="654" width="560" height="42" rx="8" fill="#ffffff"/>
+  <text class="cn step" x="942" y="682">残差相加 + LayerNorm</text>
+  <text class="cn step" x="942" y="719">FFN → 残差相加 + LayerNorm</text>
+  <path class="arrow" d="M 1204 732 L 1204 753"/>
+
+  <rect x="900" y="759" width="608" height="69" rx="12" fill="#dff4e8" stroke="#87caa4" stroke-width="2"/>
+  <text class="cn box-title" x="920" y="789">⑩ 解码器输出：目标各位置的上下文向量</text>
+  <text class="mono box-sub" x="920" y="816">shape: [B, 目标长度 T, d_model]</text>
+
+  <!-- Encoder-to-decoder connector -->
+  <path class="cross-arrow" d="M 700 792 L 796 792 L 796 627 L 917 627"/>
+  <rect x="759" y="681" width="83" height="35" rx="7" fill="#f1eaff"/>
+  <text class="mono note" x="770" y="705">K / V</text>
+
+  <!-- Training and generation after decoder output -->
+  <text class="cn lane-title" x="52" y="895">输出之后：训练与生成是两条使用路径</text>
+  <rect x="42" y="919" width="708" height="205" rx="18" fill="#fff5e8" stroke="#eac795" stroke-width="2"/>
+  <text class="cn box-title" x="69" y="956">训练时：已知正确译文</text>
+  <text class="cn note" x="69" y="989">目标输入右移：&lt;开始&gt; 我 爱 猫</text>
+  <text class="cn note" x="69" y="1020">真实标签：我 爱 猫 &lt;结束&gt;</text>
+  <text class="cn note" x="69" y="1051">所有位置的 logits 与标签计算交叉熵损失</text>
+  <text class="cn note" x="69" y="1082">反向传播并更新参数；因果 Mask 防止偷看未来</text>
+
+  <rect x="850" y="919" width="708" height="205" rx="18" fill="#eaf8f0" stroke="#96d0b2" stroke-width="2"/>
+  <text class="cn box-title" x="877" y="956">生成时：未知正确译文，逐个选 Token</text>
+  <text class="cn note" x="877" y="989">⑪ final_linear → 词表 logits → Softmax</text>
+  <text class="cn note" x="877" y="1020">⑫ 选出下一个 Token，追加到目标前缀</text>
+  <text class="cn note" x="877" y="1051">⑬ 回到步骤 ⑥，直到生成 &lt;结束&gt;</text>
+  <text class="cn note" x="877" y="1082">最终输出：我 爱 猫</text>
+
+  <path class="arrow" d="M 1204 829 L 1204 912"/>
+  <path class="loop-arrow" d="M 1510 1035 L 1573 1035 L 1573 220 L 1515 220"/>
+  <text class="cn small" x="47" y="1148">图示为训练好的模型如何用于翻译；项目 Transformer.py 只实现前向计算，尚未提供训练循环和逐词生成函数。</text>
+</svg>

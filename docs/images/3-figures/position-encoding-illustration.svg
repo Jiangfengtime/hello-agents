@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="850" viewBox="0 0 1360 850" role="img" aria-labelledby="title desc">
+  <title id="title">位置编码的生成与相加</title>
+  <desc id="desc">以四维位置编码为例，展示位置零、一、二经正弦余弦公式得到的位置向量，以及同一个猫字的词嵌入分别与位置零和位置一向量逐元素相加后的结果。</desc>
+  <defs>
+    <style>
+      .cn { font-family: "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; }
+      .mono { font-family: "Menlo", "SFMono-Regular", "Consolas", monospace; }
+      .title { font-size: 34px; font-weight: 700; fill: #17243b; }
+      .subtitle { font-size: 18px; fill: #526079; }
+      .section { font-size: 23px; font-weight: 700; fill: #253555; }
+      .label { font-size: 19px; font-weight: 700; fill: #274362; }
+      .formula { font-size: 22px; fill: #283954; }
+      .num { font-size: 21px; fill: #1c3154; }
+      .small { font-size: 16px; fill: #60708a; }
+    </style>
+  </defs>
+
+  <rect width="1360" height="850" fill="#f7f9fc"/>
+  <text class="cn title" x="48" y="57">位置编码：先按位置生成向量，再与 Token 嵌入相加</text>
+  <text class="cn subtitle" x="48" y="89">教学示例：d_model = 4；实际项目演示采用 512 维。所有数值按三位小数显示。</text>
+
+  <rect x="40" y="115" width="1280" height="315" rx="20" fill="#ffffff" stroke="#d9e2ef" stroke-width="2"/>
+  <text class="cn section" x="68" y="153">① 用同一个公式生成每个位置的向量</text>
+  <rect x="68" y="171" width="1224" height="66" rx="12" fill="#eef3fd"/>
+  <text class="mono formula" x="94" y="212">PE[pos] = [sin(pos), cos(pos), sin(pos/100), cos(pos/100)]</text>
+
+  <rect x="68" y="255" width="386" height="145" rx="14" fill="#e9f4ff" stroke="#96c9f5" stroke-width="2"/>
+  <text class="cn label" x="90" y="288">第 1 个 Token · 位置 0</text>
+  <text class="mono num" x="90" y="330">PE[0] = [0, 1, 0, 1]</text>
+  <text class="cn small" x="90" y="369">把 pos = 0 代入公式</text>
+
+  <rect x="487" y="255" width="386" height="145" rx="14" fill="#eaf8f0" stroke="#8bd6ac" stroke-width="2"/>
+  <text class="cn label" x="509" y="288">第 2 个 Token · 位置 1</text>
+  <text class="mono num" x="509" y="330">[.841, .540, .010, 1]</text>
+  <text class="cn small" x="509" y="369">把 pos = 1 代入公式</text>
+
+  <rect x="906" y="255" width="386" height="145" rx="14" fill="#fff2e8" stroke="#f5bf87" stroke-width="2"/>
+  <text class="cn label" x="928" y="288">第 3 个 Token · 位置 2</text>
+  <text class="mono num" x="928" y="330">[.909, -.416, .020, 1]</text>
+  <text class="cn small" x="928" y="369">把 pos = 2 代入公式</text>
+
+  <rect x="40" y="455" width="1280" height="340" rx="20" fill="#ffffff" stroke="#d9e2ef" stroke-width="2"/>
+  <text class="cn section" x="68" y="494">② 同一个 Token 出现在不同位置，得到不同的输入向量</text>
+  <text class="cn small" x="69" y="520">示意词嵌入 E(猫) = [0.20, 0.40, -0.10, 0.30]；按向量的对应维度相加。</text>
+
+  <rect x="68" y="538" width="360" height="100" rx="12" fill="#f1f5fb" stroke="#ced9e8"/>
+  <text class="cn label" x="87" y="571">Token 嵌入 E(猫)</text>
+  <text class="mono num" x="87" y="607">[.20, .40, -.10, .30]</text>
+  <text class="mono formula" x="444" y="599">+</text>
+  <rect x="483" y="538" width="313" height="100" rx="12" fill="#e9f4ff" stroke="#96c9f5"/>
+  <text class="cn label" x="501" y="571">位置 0 的向量</text>
+  <text class="mono num" x="501" y="607">[0, 1, 0, 1]</text>
+  <text class="mono formula" x="817" y="599">→</text>
+  <rect x="869" y="538" width="423" height="100" rx="12" fill="#e7f6ee" stroke="#87d0a5"/>
+  <text class="cn label" x="888" y="571">送入模型的向量 · 位置 0</text>
+  <text class="mono num" x="888" y="607">[.200, 1.400, -.100, 1.300]</text>
+
+  <rect x="68" y="662" width="360" height="100" rx="12" fill="#f1f5fb" stroke="#ced9e8"/>
+  <text class="cn label" x="87" y="695">同一个 Token 嵌入 E(猫)</text>
+  <text class="mono num" x="87" y="731">[.20, .40, -.10, .30]</text>
+  <text class="mono formula" x="444" y="723">+</text>
+  <rect x="483" y="662" width="313" height="100" rx="12" fill="#eaf8f0" stroke="#8bd6ac"/>
+  <text class="cn label" x="501" y="695">位置 1 的向量</text>
+  <text class="mono num" x="501" y="731">[.841, .540, .010, 1]</text>
+  <text class="mono formula" x="817" y="723">→</text>
+  <rect x="869" y="662" width="423" height="100" rx="12" fill="#e7f6ee" stroke="#87d0a5"/>
+  <text class="cn label" x="888" y="695">送入模型的向量 · 位置 1</text>
+  <text class="mono num" x="888" y="731">[1.041, .940, -.090, 1.300]</text>
+
+  <text class="cn subtitle" x="49" y="831">位置向量提供顺序线索；后续注意力层从“词嵌入 + 位置编码”的结果中学习如何利用它。</text>
+</svg>

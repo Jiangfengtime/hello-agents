@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="790" viewBox="0 0 1400 790" role="img" aria-labelledby="title desc">
+  <title id="title">Decoder-Only 的结构、训练与生成流程</title>
+  <desc id="desc">上方显示提示词经过 Token 化、嵌入、位置表示、多层因果自注意力和前馈网络，得到词表 logits。下方左侧是训练时并行预测各位置的下一个 Token 并计算损失；右侧是生成时取最后位置 logits、选出 Token、接回前缀并重复。</desc>
+  <defs>
+    <style>
+      .cn { font-family: "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; }
+      .mono { font-family: "Menlo", "SFMono-Regular", "Consolas", monospace; }
+      .title { font-size: 34px; font-weight: 700; fill: #17243b; }
+      .sub { font-size: 18px; fill: #52627b; }
+      .h { font-size: 25px; font-weight: 700; fill: #233752; }
+      .label { font-size: 21px; font-weight: 700; fill: #253450; }
+      .line { font-size: 18px; fill: #314461; }
+      .small { font-size: 16px; fill: #61708b; }
+      .arrow { fill: none; stroke: #58708e; stroke-width: 3; marker-end: url(#arrow); }
+      .loop { fill: none; stroke: #26815c; stroke-width: 3; marker-end: url(#loop-arrow); }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#58708e"/></marker>
+    <marker id="loop-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#26815c"/></marker>
+  </defs>
+
+  <rect width="1400" height="790" fill="#f7f9fc"/>
+  <text class="cn title" x="43" y="56">Decoder-Only：同一条序列上预测下一个 Token</text>
+  <text class="cn sub" x="43" y="88">没有独立编码器；基础形式没有对编码器输出的交叉注意力。</text>
+
+  <rect x="40" y="112" width="1320" height="245" rx="19" fill="#ffffff" stroke="#d6e1ed" stroke-width="2"/>
+  <text class="cn h" x="66" y="153">共同的模型计算路径</text>
+  <rect x="65" y="182" width="225" height="125" rx="13" fill="#e9f2ff" stroke="#99bcea"/>
+  <text class="cn label" x="85" y="218">① 已有文本</text>
+  <text class="cn line" x="85" y="254">如：今天天气很</text>
+  <text class="cn small" x="85" y="286">提示词或训练文本</text>
+  <path class="arrow" d="M 291 244 L 320 244"/>
+
+  <rect x="326" y="182" width="265" height="125" rx="13" fill="#eef0ff" stroke="#b8c0ed"/>
+  <text class="cn label" x="346" y="218">② 输入表示</text>
+  <text class="cn line" x="346" y="253">Token ID → 嵌入</text>
+  <text class="cn line" x="346" y="283">加入位置信息</text>
+  <path class="arrow" d="M 592 244 L 622 244"/>
+
+  <rect x="628" y="172" width="395" height="145" rx="13" fill="#f0eefe" stroke="#bcb0e9"/>
+  <text class="cn label" x="648" y="207">③ 多层因果 Decoder</text>
+  <text class="cn line" x="648" y="240">因果自注意力：只看当前与之前</text>
+  <text class="cn line" x="648" y="271">残差、归一化、逐位置 FFN</text>
+  <text class="cn small" x="648" y="299">未来位置由下三角 Mask 屏蔽</text>
+  <path class="arrow" d="M 1024 244 L 1054 244"/>
+
+  <rect x="1060" y="182" width="275" height="125" rx="13" fill="#e8f6ed" stroke="#97d1b1"/>
+  <text class="cn label" x="1080" y="218">④ 输出层</text>
+  <text class="mono line" x="1080" y="253">logits [B, L, V]</text>
+  <text class="cn small" x="1080" y="284">每个位置预测下一 Token</text>
+
+  <rect x="40" y="385" width="630" height="338" rx="18" fill="#fff6e9" stroke="#e9c896" stroke-width="2"/>
+  <text class="cn h" x="67" y="426">训练：完整文本已知</text>
+  <text class="cn line" x="67" y="465">输入：今天　天气　很　好</text>
+  <text class="cn line" x="67" y="496">标签：天气　很　　好　。</text>
+  <rect x="67" y="518" width="575" height="115" rx="10" fill="#ffffff"/>
+  <text class="cn line" x="86" y="552">位置 2 看到「今天 天气 很」</text>
+  <text class="cn line" x="86" y="585">预测位置 3 的「好」，不能提前看它</text>
+  <text class="cn small" x="67" y="668">各位置同时计算 logits → 与标签求损失</text>
+  <text class="cn small" x="67" y="697">反向传播，更新模型参数</text>
+
+  <rect x="730" y="385" width="630" height="338" rx="18" fill="#eaf8f0" stroke="#94d1b1" stroke-width="2"/>
+  <text class="cn h" x="757" y="426">生成：未来文本未知</text>
+  <rect x="757" y="447" width="575" height="58" rx="10" fill="#ffffff"/>
+  <text class="cn line" x="777" y="483">已有前缀：今天天气很</text>
+  <path class="arrow" d="M 1045 507 L 1045 525"/>
+  <rect x="757" y="531" width="575" height="58" rx="10" fill="#ffffff"/>
+  <text class="cn line" x="777" y="568">只取最后位置 logits → 选择「好」</text>
+  <path class="arrow" d="M 1045 591 L 1045 609"/>
+  <rect x="757" y="615" width="575" height="58" rx="10" fill="#ffffff"/>
+  <text class="cn line" x="777" y="652">接回前缀：今天天气很好</text>
+  <path class="loop" d="M 1334 644 L 1346 644 L 1346 476 L 1334 476"/>
+  <text class="cn small" x="757" y="701">重复直到结束标记或达到停止条件</text>
+
+  <text class="cn sub" x="45" y="761">同一套模型，训练时多个已知位置并行预测；生成时需根据上一轮选出的 Token 决定下一轮输入。</text>
+</svg>
