@@ -22,7 +22,20 @@ def create_openai_model_client():
     return OpenAIChatCompletionClient(
         model=os.getenv("LLM_MODEL_ID", "gpt-4o"),
         api_key=os.getenv("LLM_API_KEY"),
-        base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
+        base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
+        # 自定义模型名不在 AutoGen 内置列表中；本例只使用文本对话。
+        # 可通过下面的方法查询内置可以识别的模型列表:
+        # from autogen_ext.models.openai import _model_info
+        #
+        # for name in sorted(_model_info._MODEL_INFO):
+        #     print(name)
+        model_info={
+            "vision": False,
+            "function_calling": False,
+            "json_output": False,
+            "family": "unknown",
+            "structured_output": False,
+        },
     )
 
 def create_product_manager(model_client):
@@ -124,23 +137,38 @@ async def run_software_development_team():
     print("👥 正在创建智能体团队...")
     
     # 创建智能体团队
+    # 创建产品经理智能体
     product_manager = create_product_manager(model_client)
+
+    # 创建软件工程师智能体
     engineer = create_engineer(model_client)
+
+    # 创建代码审查员智能体
     code_reviewer = create_code_reviewer(model_client)
+
+    # 创建用户代理智能体
     user_proxy = create_user_proxy()
     
     # 添加终止条件
     termination = TextMentionTermination("TERMINATE")
     
     # 创建团队聊天
+    # RoundRobinGroupChat 是 AutoGen 的一个多智能体团队调度器。
+    # 它按照 participants 列表的顺序，安排成员轮流处理消息和发言。
     team_chat = RoundRobinGroupChat(
+        # participants：有哪些成员，按什么顺序发言
+        # 列表顺序就是轮流顺序。调度到列表末尾后，再从开头开始。
         participants=[
             product_manager,
             engineer, 
             code_reviewer,
             user_proxy
         ],
+        # termination_condition：什么时候提前结束
+        # 任何一个成员回答里有[TERMINATE] 关键字就会立即结束循环
         termination_condition=termination,
+        # 制定成员回答里有[TERMINATE] 关键字才会结束循环
+        # termination = TextMentionTermination("TERMINATE", sources=["UserProxy"],)
         max_turns=20,  # 增加最大轮次
     )
     

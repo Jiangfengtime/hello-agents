@@ -5,7 +5,6 @@
 ## 📁 文件说明
 
 - `autogen_software_team.py` - 主要案例代码（基于 OpenAI 客户端）
-- `llm_client.py` - HelloAgentsLLM 客户端实现
 - `requirements.txt` - 依赖包列表
 - `output.py` - 团队协作生成的比特币价格应用示例
 - `README.md` - 本说明文档
@@ -14,7 +13,7 @@
 
 - **多智能体协作**：演示产品经理、工程师、代码审查员、用户代理的完整协作流程
 - **真实开发场景**：从需求分析到代码实现的完整软件开发生命周期
-- **自动化流程**：智能体间自动传递任务，无需人工干预
+- **协作流程**：模型角色间自动传递任务，轮到 UserProxy 时由真人输入测试反馈
 - **代码生成与审查**：自动生成可运行的代码并进行质量审查
 
 ## 🛠️ 环境准备
@@ -22,7 +21,7 @@
 ### 1. 安装依赖
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ### 2. 配置环境变量
@@ -33,7 +32,7 @@ pip install -r requirements.txt
 # LLM 配置
 LLM_API_KEY=your-api-key-here
 LLM_BASE_URL=https://api.openai.com/v1
-LLM_MODEL_ID=gpt-4
+LLM_MODEL_ID=gpt-4o
 ```
 
 ### 3. 验证环境
@@ -45,7 +44,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-print(f"API Key: {os.getenv('LLM_API_KEY')[:10]}...")
+print(f"API Key configured: {bool(os.getenv('LLM_API_KEY'))}")
 print(f"Base URL: {os.getenv('LLM_BASE_URL')}")
 print(f"Model: {os.getenv('LLM_MODEL_ID')}")
 ```
@@ -156,6 +155,15 @@ A: 检查以下几点：
 - 确认 API Key 配置正确
 - 检查网络连接
 - 验证模型名称是否正确
+
+### Q: `model_info is required when model name is not a valid OpenAI model`？
+A: DeepSeek 等兼容服务的模型名称可能不在 AutoGen 的内置模型表中，需要显式传入 `model_info`。本例已声明文本对话能力，关闭未使用的视觉、工具调用和结构化输出；这不是断言模型本身没有这些能力。保持 `LLM_MODEL_ID` 为服务商实际支持的名称，不需要改成 GPT 模型名。[AutoGen 模型客户端说明](https://microsoft.github.io/autogen/stable/reference/python/autogen_ext.models.openai.html)
+
+### Q: 到 UserProxy 后一直等待？
+A: `UserProxyAgent` 默认等待终端中的真人反馈，不会自动执行生成的代码。自行测试后输入反馈；确认结束时输入 `TERMINATE`。生成应用的 Streamlit 等依赖与当前协作脚本的模型客户端依赖是不同用途。
+
+### Q: `Resolved model mismatch` 警告是否表示调用失败？
+A: 不一定。服务可能将请求的模型名映射为另一个响应别名，例如请求 `deepseek-v4-flash`，响应为 `deepseek-flash`。本次验证已正常完成调用；该警告提示模型名称映射可能影响 Token/费用估算。只有确认服务支持对应名称后再调整配置，不要仅为消除警告随意换模型。
 
 ### Q: 协作过程中断？
 A: 可能原因：
